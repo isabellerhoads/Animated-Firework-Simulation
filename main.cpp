@@ -176,8 +176,8 @@ static void init()
 			auto p = make_shared<Particle>(i);
 			p->setShapeindex(j);
 			particles.push_back(p);
-  			Vector3f pos = shapes[0]->update(0, true, vertIndex, i) / 50;
-			p->rebirth(0.0f, keyToggles, pos);
+  			Vector3f pos = shapes[0]->update(0, true, vertIndex, i) / 100;
+			p->rebirth(0.0f, keyToggles, pos, Vector3f(0.0f, 1.0f, 0.0f));
 			vertIndex += 3;
 		}
 	}
@@ -254,22 +254,24 @@ static void render()
 	GLSL::checkError(GET_FILE_LINE);
 }
 
-void stepParticles(int t1)
+bool stepParticles(int frame)
 {
 	if(keyToggles[(unsigned)' ']) {
 		// This can be parallelized!
+		bool explodes = false;
 		int index = 0;
 		double fps = 30;
-		int frame = ((int)floor(100 * t * 30)) % frameCount;
-		cout << "frame: " << frame << endl;
+
 		for(int i = 0; i < (int)particles.size(); ++i) 
 		{
-			Vector3f pos = shapes[0]->update(frame, true, index, i) / 50;
-			particles[i]->step(t, h, grav, keyToggles, pos, i);
+			Vector3f pos = shapes[0]->update(frame, true, index, i) / 75;
+			explodes = particles[i]->step(t, h, grav, keyToggles, pos);
 			index += 3;
 		}
 		t += h;
+		return explodes;
 	}
+	return false;
 }
 
 void loadDataInputFile()
@@ -464,17 +466,32 @@ int main(int argc, char **argv)
 	glfwSetFramebufferSizeCallback(window, resize_callback);
 	// Initialize scene.
 	init();
+
+	bool explodes = false;
+	int frame = 0;
+	float tFrame = 0.0f;
 	// Loop until the user closes the window.
 	while(!glfwWindowShouldClose(window)) {
 		// Step particles.
-		stepParticles(t1);
+		explodes = stepParticles(frame);
+		
+		if (explodes)
+		{
+			frame = ((int)floor(30 * tFrame)) % frameCount;
+			tFrame += h;
+		}
+		else
+		{
+			frame = 0;
+			tFrame = 0.0f;
+		}
+
 		if(!glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
 			// Render scene.
 			render();
 			// Swap front and back buffers.
 			glfwSwapBuffers(window);
 		}
-		t1 += 1.0;
 		// Poll for and process events.
 		glfwPollEvents();
 	}

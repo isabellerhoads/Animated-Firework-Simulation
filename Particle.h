@@ -23,8 +23,8 @@ public:
 	
 	Particle(int index);
 	virtual ~Particle();
-	void rebirth(float t, const bool *keyToggles, Eigen::Vector3f p0);
-	void step(float t, float h, const Eigen::Vector3f &g, const bool *keyToggles, Eigen::Vector3f pos, int i);
+	void rebirth(float t, const bool *keyToggles, Eigen::Vector3f p0, Eigen::Vector3f v0);
+	bool step(float t, float h, const Eigen::Vector3f &g, const bool *keyToggles, Eigen::Vector3f pos);
 	void setShapeindex(int i) { shapeIndex = i; }
 	int getShapeIndex() { return shapeIndex; }
 	void explode(float t, float h, const Eigen::Vector3f& g, Eigen::Vector3f pos);
@@ -46,6 +46,8 @@ private:
 	float d;        // viscous damping
 	float lifespan; // how long this particle lives
 	float tEnd;     // time this particle dies
+	float offset;	// offset to shift origin of character
+	float tExplode; // for scaling purposes
 	
 	// Properties that changes every frame
 	Eigen::Map<Eigen::Vector3f> x; // position (mapped to a location in posBuf)

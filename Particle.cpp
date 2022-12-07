@@ -48,7 +48,7 @@ Particle::~Particle()
 {
 }
 
-void Particle::rebirth(float t, const bool *keyToggles, Vector3f p0)
+void Particle::rebirth(float t, const bool *keyToggles, Vector3f p0, Vector3f v0)
 {
 	m = 1.0f;
 	alpha = 1.0f;
@@ -64,8 +64,9 @@ void Particle::rebirth(float t, const bool *keyToggles, Vector3f p0)
 	d = randFloat(0.0f, 3.0f);
 	// x << p0(0) * 0.5, p0(1) * 0.5, p0(2) * 0.5;
 	x << start(0), start(1), start(2);
-	v << p0(0), p0(1), p0(2);
-	lifespan = 1.14f;
+	v << 0.0f, 1.0f, 0.0f;
+	lifespan = 2.4f;
+	tExplode = lifespan;
 
 	//
 	// </IMPLEMENT ME>
@@ -74,34 +75,45 @@ void Particle::rebirth(float t, const bool *keyToggles, Vector3f p0)
 	tEnd = t + lifespan;
 }
 
-void Particle::explode(float t, float h, const Vector3f& g, Vector3f pos)
+void Particle::explode(float tExplode, float h, const Vector3f& g, Vector3f pos)
 {
+	float scale = 10000 * (lifespan - tExplode);
 
-}
-
-void Particle::step(float t, float h, const Vector3f &g, const bool *keyToggles, Vector3f pos, int i)
-{
-	if(t > tEnd) {
-		rebirth(t, keyToggles, pos);
-	}
-	// Update alpha based on current time
-	alpha = (tEnd-t)/lifespan;
-	
-	float scale = 10000 * (lifespan - (tEnd - t));
-
-	//
-	// <IMPLEMENT ME>
-	// Accumulate forces and update velocity
-	//
-
-	// pos.normalize();
-
- 	Vector3f f = scale * (pos -  v);
+	//cout << "v: " << v << endl;
+	//cout << "x: " << x << endl;
+	Vector3f f = scale * (pos - v);
 	v += (h / m) * f;
 
 	x += h * v;
 
 	v = pos;
+}
+
+bool Particle::step(float t, float h, const Vector3f &g, const bool *keyToggles, Vector3f pos)
+{
+	if(t > tEnd) {
+		rebirth(t, keyToggles, pos, Vector3f(0.0f, 1.0f, 0.0f));
+	}
+	// Update alpha based on current time
+	alpha = (tEnd-t)/lifespan;
+	float tStep = tEnd - t;
+
+	if (tStep == 1.14)
+	{
+		v = pos;
+	}
+
+	if (tStep < 1.14)
+	{
+		explode(tExplode, h, g, pos);
+		tExplode -= h;
+		return true;
+	}
+	else
+	{
+		x += h * v;
+		return false;
+	}
 }
 
 float Particle::randFloat(float l, float h)
